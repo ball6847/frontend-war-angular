@@ -1,4 +1,6 @@
 #!/bin/bash -e
 
+DOCKER_REGISTRY="192.168.100.254:5000"
+
 docker run -it --rm=true -v $PWD:/app -w /app node:8-slim sh -c "yarn && yarn run ng build -prod"
-# docker build -t 192.168.100.254:5000/frontend-war-angular .
+docker build -t "$DOCKER_REGISTRY/frontend-war-angular" .

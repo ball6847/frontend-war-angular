@@ -1,0 +1,6 @@
+http://0.0.0.0 {
+  root /app
+  rewrite {
+    to {path} {path}/ /index.html
+  }
+}

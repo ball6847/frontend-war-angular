@@ -1,0 +1,109 @@
+version: '3.3'
+
+# TODO: use docker secret if possible
+# TODO: make mariadb automatically create database for drone
+# TODO: make drone use mysql database
+
+services:
+  gogs:
+    image: gogs/gogs:0.11.29
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+    environment:
+      SOCAT_LINK: 0
+      RUN_CROND: 1
+    deploy:
+      mode: replicated
+      replicas: 1
+    ports:
+      - "10022:22"
+      - "10080:3000"
+    volumes:
+      - "/data/gogs:/data"
+
+  mariadb:
+    image: mariadb:10.1
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: gogs
+      MYSQL_USER: gogs
+      MYSQL_PASSWORD: gogs
+      MYSQL_ROOT_PASSWORD: somethingrandomandhardtoguess
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - "/data/mariadb:/var/lib/mysql"
+
+  drone-server:
+    image: drone/drone:0.7
+    restart: unless-stopped
+    environment:
+      DRONE_OPEN: "true"
+      DRONE_SECRET: drone
+      DRONE_GOGS: "true"
+      DRONE_GOGS_URL: http://gogs:3000/
+      DRONE_GOGS_PRIVATE_MODE: "true"
+      DRONE_GOGS_SKIP_VERIFY: "true"
+    deploy:
+      mode: replicated
+      replicas: 1
+    ports:
+      - 8000:8000
+    volumes:
+      - "/data/drone:/var/lib/drone/"
+
+  drone-agent:
+    image: drone/drone:0.7
+    command: agent
+    restart: unless-stopped
+    depends_on:
+      - drone-server
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      DRONE_SERVER: ws://drone-server:8000/ws/broker
+      DRONE_SECRET: drone
+
+  frontend-war-angular:
+    image: 192.168.100.254:5000/frontend-war-angular:latest
+    ports:
+      - 80:80
+
+
+
+# volumes:
+#   gogs:
+#   mariadb:
+#   drone:
+#   docker-socket:
+
+# volumes:
+#   gogs:
+#     driver: local
+#     driver_opts:
+#       o: bind
+#       type: none
+#       device: /data/gogs
+#   mariadb:
+#     driver: local
+#     driver_opts:
+#       o: bind
+#       type: none
+#       device: /data/mariadb
+#   drone:
+#     driver: local
+#     driver_opts:
+#       o: bind
+#       type: none
+#       device: /var/run/docker.sock
+#   docker-socket:
+#     driver: local
+#     driver_opts:
+#       o: bind
+#       type: none
+#       device: /data/gogs

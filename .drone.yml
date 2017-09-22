@@ -1,0 +1,11 @@
+---
+build:
+  image: node:8-slim
+  commands:
+    - yarn
+    - yarn run ng build -prod
+
+test:
+  image: node:8-slim
+  commands:
+    - yarn run ng test --single-run
